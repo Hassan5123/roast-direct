@@ -7,7 +7,7 @@ from models.user import User
 from db import get_database
 
 
-def generate_jwt_token(user_id, email):
+def generate_jwt_token(user_id, role, email):
     """Generate JWT token for user"""
     secret_key = os.getenv('JWT_SECRET')
     
@@ -16,6 +16,7 @@ def generate_jwt_token(user_id, email):
     
     payload = {
         'user_id': str(user_id),
+        'role': role,
         'email': email,
         'exp': datetime.utcnow() + timedelta(days=7),
         'iat': datetime.utcnow()
@@ -33,6 +34,10 @@ def register():
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'{field} is required'}), 400
+
+        role = data.get('role', 'customer')
+        if role not in ('admin', 'customer'):
+            return jsonify({'error': 'Invalid role specified'}), 400
         
         existing_user = User.find_by_email(data['email'])
         if existing_user:
@@ -46,12 +51,13 @@ def register():
             email=data['email'],
             password=hashed_password.decode('utf-8'),
             first_name=data['first_name'],
-            last_name=data['last_name']
+            last_name=data['last_name'],
+            role=role
         )
         
         user_id = User.create_user(new_user.to_dict())
         
-        token = generate_jwt_token(user_id, data['email'])
+        token = generate_jwt_token(user_id, role, data['email'])
         
         return jsonify({
             'message': 'User created successfully',
@@ -59,6 +65,7 @@ def register():
             'user': {
                 'id': str(user_id),
                 'email': data['email'],
+                'role': role,
                 'first_name': data['first_name'],
                 'last_name': data['last_name']
             }
@@ -85,7 +92,8 @@ def login():
         if not bcrypt.checkpw(password_bytes, hashed_password):
             return jsonify({'error': 'Invalid email or password'}), 401
         
-        token = generate_jwt_token(user['_id'], user['email'])
+        role = user.get('role', 'customer')
+        token = generate_jwt_token(user['_id'], role, user['email'])
         
         return jsonify({
             'message': 'Login successful',
@@ -93,6 +101,7 @@ def login():
             'user': {
                 'id': str(user['_id']),
                 'email': user['email'],
+                'role': role,
                 'first_name': user['first_name'],
                 'last_name': user['last_name']
             }

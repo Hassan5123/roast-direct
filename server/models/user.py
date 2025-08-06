@@ -2,11 +2,23 @@ from datetime import datetime
 from db import get_database
 
 class User:
-    def __init__(self, email, password, first_name, last_name):
+    def __init__(self, email, password, first_name, last_name, role='customer'):
+        """Initialize a new `User` instance.
+
+        Args:
+            email (str): User email address.
+            password (str): Hashed password string.
+            first_name (str): First name.
+            last_name (str): Last name.
+            role (str, optional): User role (`'admin'` or `'customer'`). Defaults to `'customer'`.
+        """
         self.email = email
-        self.password = password  # Will be hashed later
+        self.password = password
         self.first_name = first_name
         self.last_name = last_name
+        # Ensure role is one of the allowed values
+        allowed_roles = {'admin', 'customer'}
+        self.role = role if role in allowed_roles else 'customer'
         self.created_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()
     
@@ -17,6 +29,7 @@ class User:
             'password': self.password,
             'first_name': self.first_name,
             'last_name': self.last_name,
+            'role': self.role,
             'created_at': self.created_at,
             'updated_at': self.updated_at
         }
