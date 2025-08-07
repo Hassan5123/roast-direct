@@ -40,3 +40,54 @@ def add_product():
         return jsonify({'message': 'Product added successfully', 'product_id': str(product_id)}), 201
     except Exception as e:
         return jsonify({'error': 'Internal server error'}), 500
+
+
+def get_all_products():
+    """Get all active products for catalog display"""
+    try:
+        db = get_database()
+        products = db.products.find({'is_active': True})
+        
+        # Convert MongoDB cursor to list and handle ObjectId serialization
+        products_list = []
+        for product in products:
+            product['_id'] = str(product['_id'])  # Convert ObjectId to string for JSON
+            products_list.append(product)
+        
+        return jsonify({
+            'message': 'Products retrieved successfully',
+            'products': products_list,
+            'count': len(products_list)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+def get_product_by_id(product_id):
+    """Get single product by ID for product detail page"""
+    try:
+        from bson import ObjectId
+        from bson.errors import InvalidId
+        
+        try:
+            object_id = ObjectId(product_id)
+        except InvalidId:
+            return jsonify({'error': 'Invalid product ID format'}), 400
+        
+        db = get_database()
+        product = db.products.find_one({'_id': object_id, 'is_active': True})
+        
+        if not product:
+            return jsonify({'error': 'Product not found'}), 404
+        
+        # Convert ObjectId to string for JSON serialization
+        product['_id'] = str(product['_id'])
+        
+        return jsonify({
+            'message': 'Product retrieved successfully',
+            'product': product
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': 'Internal server error'}), 500
