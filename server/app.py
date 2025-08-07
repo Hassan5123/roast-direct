@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from db import get_database
 from routes.auth_routes import auth_bp
+from routes.product_routes import product_bp
 from middlewares.error_handler import register_error_handlers
 
 app = Flask(__name__)
@@ -11,6 +12,7 @@ db = get_database()
 
 # Register blueprints
 app.register_blueprint(auth_bp)
+app.register_blueprint(product_bp)
 register_error_handlers(app)
 
 @app.route('/api/health', methods=['GET'])

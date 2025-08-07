@@ -104,6 +104,8 @@ def login():
 
 
 
+# role validator:
+
 # from flask import jsonify, g
 # from functools import wraps
 

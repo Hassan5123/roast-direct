@@ -1,18 +1,19 @@
 from datetime import datetime
 
 class Product:
-    def __init__(self, name, description, price, roast_level, origin_country, 
-                 inventory_count, image_url, roast_date=None, farm_info=None, 
-                 processing_method=None, tasting_notes=None):
+    def __init__(self, name, description, price, roast_level, origin_country, elevation,
+                 inventory_count, image_url, roast_date, farm_info,
+                 processing_method, tasting_notes):
         self.name = name
         self.description = description
         self.price = float(price)
         self.roast_level = roast_level  # 'light', 'medium', 'dark'
         self.origin_country = origin_country
+        self.elevation = elevation # in meters
         self.inventory_count = int(inventory_count)
         self.image_url = image_url
-        self.roast_date = roast_date or datetime.utcnow()
-        self.farm_info = farm_info  # Optional detailed farm information
+        self.roast_date = roast_date
+        self.farm_info = farm_info
         self.processing_method = processing_method  # 'washed', 'natural', 'honey', etc.
         self.tasting_notes = tasting_notes or []  # Array of flavor notes
         self.created_at = datetime.utcnow()
@@ -27,6 +28,7 @@ class Product:
             'price': self.price,
             'roast_level': self.roast_level,
             'origin_country': self.origin_country,
+            'elevation': self.elevation,
             'inventory_count': self.inventory_count,
             'image_url': self.image_url,
             'roast_date': self.roast_date,
@@ -52,3 +54,10 @@ class Product:
     def is_in_stock(self):
         """Check if product has available inventory"""
         return self.inventory_count > 0
+
+    # @staticmethod
+    # def create_product(product_data):
+    #     """Create new product in database"""
+    #     db = get_database()
+    #     result = db.products.insert_one(product_data)
+    #     return result.inserted_id
