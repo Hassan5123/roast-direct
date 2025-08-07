@@ -17,7 +17,7 @@ class Order:
         self.tax_amount = float(tax_amount)
         self.total = float(total)
         self.order_notes = order_notes
-        self.status = 'pending'  # pending, confirmed, processing, shipped, delivered, cancelled
+        self.status = 'in-progress'  # in-progress, completed, canceled
         self.tracking_number = None
         self.created_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()
@@ -75,4 +75,4 @@ class Order:
     
     def can_be_cancelled(self):
         """Check if order can still be cancelled"""
-        return self.status in ['pending', 'confirmed']
+        return self.status == 'in-progress'
