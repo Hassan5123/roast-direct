@@ -8,15 +8,10 @@ def add_product():
     try:
         data = request.get_json()
 
-        required_fields = ['name', 'description', 'price', 'roast_level', 'origin_country', 'elevation', 'inventory_count', 'image_url', 'roast_date', 'farm_info', 'processing_method', 'tasting_notes']
+        required_fields = ['name', 'description', 'price', 'roast_level', 'origin_country', 'elevation', 'inventory_count', 'image_url', 'farm_info', 'processing_method', 'tasting_notes']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'{field} is required'}), 400
-
-        try:
-            roast_date = datetime.fromisoformat(data['roast_date'])
-        except ValueError:
-            return jsonify({'error': 'Invalid roast_date format. Use YYYY-MM-DD'}), 400
 
         new_product = Product(
             name=data['name'],
@@ -27,7 +22,6 @@ def add_product():
             elevation=data['elevation'],
             inventory_count=data['inventory_count'],
             image_url=data['image_url'],
-            roast_date=roast_date,
             farm_info=data['farm_info'],
             processing_method=data['processing_method'],
             tasting_notes=data['tasting_notes'],
@@ -43,10 +37,14 @@ def add_product():
 
 
 def get_all_products():
-    """Get all active products for catalog display"""
+    """Get all active products with available inventory for catalog display"""
     try:
         db = get_database()
-        products = db.products.find({'is_active': True})
+        # Only show products that are active AND have inventory > 0
+        products = db.products.find({
+            'is_active': True,
+            'inventory_count': {'$gt': 0}
+        })
         
         # Convert MongoDB cursor to list and handle ObjectId serialization
         products_list = []

@@ -2,7 +2,7 @@ from datetime import datetime
 
 class Product:
     def __init__(self, name, description, price, roast_level, origin_country, elevation,
-                 inventory_count, image_url, roast_date, farm_info,
+                 inventory_count, image_url, farm_info,
                  processing_method, tasting_notes):
         self.name = name
         self.description = description
@@ -12,7 +12,6 @@ class Product:
         self.elevation = elevation # in meters
         self.inventory_count = int(inventory_count)
         self.image_url = image_url
-        self.roast_date = roast_date
         self.farm_info = farm_info
         self.processing_method = processing_method  # 'washed', 'natural', 'honey', etc.
         self.tasting_notes = tasting_notes or []  # Array of flavor notes
@@ -31,7 +30,6 @@ class Product:
             'elevation': self.elevation,
             'inventory_count': self.inventory_count,
             'image_url': self.image_url,
-            'roast_date': self.roast_date,
             'farm_info': self.farm_info,
             'processing_method': self.processing_method,
             'tasting_notes': self.tasting_notes,
@@ -39,25 +37,3 @@ class Product:
             'updated_at': self.updated_at,
             'is_active': self.is_active
         }
-    
-    def calculate_freshness_days(self):
-        """Calculate days since roast for freshness indicator"""
-        if not self.roast_date:
-            return None
-        return (datetime.utcnow() - self.roast_date).days
-    
-    def is_fresh(self):
-        """Determine if coffee is still fresh (within a month of roast)"""
-        days_since_roast = self.calculate_freshness_days()
-        return days_since_roast is not None and days_since_roast <= 30
-    
-    def is_in_stock(self):
-        """Check if product has available inventory"""
-        return self.inventory_count > 0
-
-    # @staticmethod
-    # def create_product(product_data):
-    #     """Create new product in database"""
-    #     db = get_database()
-    #     result = db.products.insert_one(product_data)
-    #     return result.inserted_id
