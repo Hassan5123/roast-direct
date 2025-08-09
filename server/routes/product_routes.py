@@ -2,7 +2,7 @@ from flask import Blueprint
 from controllers.product_controller import add_product, get_all_products, get_product_by_id
 from middlewares.auth_middleware import auth_required
 
-products_bp = Blueprint('product', __name__, url_prefix='/api/product')
+products_bp = Blueprint('products', __name__, url_prefix='/api/products')
 
 @products_bp.route('/add_product', methods=['POST'])
 @auth_required
@@ -10,7 +10,7 @@ def add_product_route():
     return add_product()
 
 
-@products_bp.route('/products', methods=['GET'])
+@products_bp.route('/all_products', methods=['GET'])
 def get_all_products_route():
     return get_all_products()
 
