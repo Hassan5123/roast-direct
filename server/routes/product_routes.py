@@ -15,6 +15,6 @@ def get_all_products_route():
     return get_all_products()
 
 
-@products_bp.route('/product/<string:product_id>', methods=['GET'])
+@products_bp.route('/<string:product_id>', methods=['GET'])
 def get_product_by_id_route(product_id):
     return get_product_by_id(product_id)

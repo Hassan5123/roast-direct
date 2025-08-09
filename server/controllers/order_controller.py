@@ -4,6 +4,8 @@ from bson import ObjectId
 from bson.errors import InvalidId
 from models.order import Order
 import random
+from datetime import datetime
+
 
 VALID_GRIND_OPTIONS = [
     'Whole Bean', 'Aeropress', 'Espresso', 'Chemex', 'Cold Brew', 
@@ -229,3 +231,283 @@ def place_order():
         
     except Exception as e:
         return jsonify({'error': 'Internal server error'}), 500
+
+
+def get_all_orders():
+    """Get all orders for the current user"""
+    try:
+        user_id = g.current_user_id
+        db = get_database()
+        
+        # Find all orders for this user, sorted by creation date (newest first)
+        orders = list(db.orders.find({'user_id': ObjectId(user_id)}).sort('created_at', -1))
+        
+        if not orders:
+            return jsonify({
+                'message': 'No orders found',
+                'orders': []
+            }), 200
+        
+        # Format orders for frontend display
+        formatted_orders = []
+        for order in orders:
+            # Get product names for display
+            order_items = []
+            for item in order['items']:
+                product = db.products.find_one({'_id': item['product_id']})
+                product_name = product['name'] if product else 'Unknown Product'
+                
+                order_items.append({
+                    'product_id': str(item['product_id']),
+                    'product_name': product_name,
+                    'quantity': item['quantity'],
+                    'price_at_time': item['price_at_time'],
+                    'grind_option': item['grind_option'],
+                    'item_total': round(item['price_at_time'] * item['quantity'], 2)
+                })
+            
+            # Format the order summary
+            formatted_order = {
+                'order_id': str(order['_id']),
+                'order_number': order['order_number'],
+                'created_at': order['created_at'],
+                'status': order['status'],
+                'final_total': order['final_total'],
+                'item_count': len(order_items),
+                'items': order_items,
+                # Include basic shipping info for display
+                'shipping_address': {
+                    'city': order['shipping_address'].get('city', ''),
+                    'state': order['shipping_address'].get('state', ''),
+                    'zip': order['shipping_address'].get('zip', '')
+                }
+            }
+            formatted_orders.append(formatted_order)
+        
+        return jsonify({
+            'message': 'Orders retrieved successfully',
+            'count': len(formatted_orders),
+            'orders': formatted_orders
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+def get_order_by_id(order_id):
+    """Get details of a specific order"""
+    try:
+        user_id = g.current_user_id
+        
+        try:
+            order_id = ObjectId(order_id)
+        except InvalidId:
+            return jsonify({'error': 'Invalid order ID format'}), 400
+        
+        db = get_database()
+        order = db.orders.find_one({'_id': order_id})
+        
+        if not order:
+            return jsonify({'error': 'Order not found'}), 404
+        
+        # Verify the order belongs to the current user
+        if str(order['user_id']) != str(user_id):
+            return jsonify({'error': 'Unauthorized access to this order'}), 403
+        
+        # Get product details for each item
+        order_items = []
+        for item in order['items']:
+            product = db.products.find_one({'_id': item['product_id']})
+            
+            product_info = {
+                'product_id': str(item['product_id']),
+                'product_name': product['name'] if product else 'Product no longer available',
+                'image_url': product.get('image_url', '') if product else '',
+                'quantity': item['quantity'],
+                'price_at_time': item['price_at_time'],
+                'grind_option': item['grind_option'],
+                'item_total': round(item['price_at_time'] * item['quantity'], 2)
+            }
+            order_items.append(product_info)
+        
+        # Format complete order details for frontend
+        order_details = {
+            'order_id': str(order['_id']),
+            'order_number': order['order_number'],
+            'user_id': str(order['user_id']),
+            'created_at': order['created_at'],
+            'status': order['status'],
+            'final_total': order['final_total'],
+            'items': order_items,
+            'shipping_address': order['shipping_address'],
+            'billing_address': order['billing_address'],
+            'payment_info': {
+                'payment_method': order['payment_info']['payment_method'],
+                'last_four': order['payment_info'].get('last_four', '****')
+            }
+        }
+        
+        return jsonify({
+            'message': 'Order retrieved successfully',
+            'order': order_details
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+def cancel_order(order_id):
+    """Cancel an order and restore inventory"""
+    try:
+        user_id = g.current_user_id
+        
+        try:
+            order_id = ObjectId(order_id)
+        except InvalidId:
+            return jsonify({'error': 'Invalid order ID format'}), 400
+        
+        db = get_database()
+        
+        # Start a session for atomic operations
+        with db.client.start_session() as session:
+            with session.start_transaction():
+                # Find the order
+                order = db.orders.find_one({'_id': order_id}, session=session)
+                
+                if not order:
+                    return jsonify({'error': 'Order not found'}), 404
+                
+                # Verify the order belongs to the current user
+                if str(order['user_id']) != str(user_id):
+                    return jsonify({'error': 'Unauthorized access to this order'}), 403
+                
+                # Check if order is in a state that can be canceled
+                if order['status'] not in ['in-progress', 'processing']:
+                    return jsonify({
+                        'error': f"Order cannot be canceled in '{order['status']}' status"
+                    }), 400
+                
+                # Update order status
+                result = db.orders.update_one(
+                    {'_id': order_id},
+                    {'$set': {'status': 'canceled'}},
+                    session=session
+                )
+                
+                if result.modified_count == 0:
+                    return jsonify({'error': 'Failed to cancel order'}), 500
+                
+                # Restore inventory for each item
+                restored_items = []
+                for item in order['items']:
+                    product_id = item['product_id']
+                    quantity = item['quantity']
+                    
+                    # Add quantities back to inventory
+                    db.products.update_one(
+                        {'_id': product_id},
+                        {'$inc': {'inventory_count': quantity}},
+                        session=session
+                    )
+                    
+                    # Get product info for response
+                    product = db.products.find_one({'_id': product_id}, session=session)
+                    product_name = product['name'] if product else 'Unknown Product'
+                    
+                    restored_items.append({
+                        'product_id': str(product_id),
+                        'product_name': product_name,
+                        'quantity_restored': quantity
+                    })
+        
+        return jsonify({
+            'message': 'Order canceled successfully',
+            'order_id': str(order_id),
+            'order_number': order['order_number'],
+            'restored_items': restored_items
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+def mark_as_delivered(order_id):
+    """Mark an order as delivered (admin function)"""
+    try:
+        try:
+            order_id = ObjectId(order_id)
+        except InvalidId:
+            return jsonify({'error': 'Invalid order ID format'}), 400
+        
+        db = get_database()
+        
+        # Find the order
+        order = db.orders.find_one({'_id': order_id})
+        if not order:
+            return jsonify({'error': 'Order not found'}), 404
+        
+        # Check if order can be marked as delivered
+        if order['status'] == 'canceled':
+            return jsonify({'error': 'Cannot mark canceled order as delivered'}), 400
+        
+        if order['status'] == 'delivered':
+            return jsonify({'message': 'Order is already marked as delivered'}), 200
+        
+        # Update order status
+        result = db.orders.update_one(
+            {'_id': order_id},
+            {'$set': {'status': 'delivered'}}
+        )
+        
+        if result.modified_count == 0:
+            return jsonify({'error': 'Failed to update order status'}), 500
+        
+        return jsonify({
+            'message': 'Order marked as delivered successfully',
+            'order_id': str(order_id),
+            'order_number': order['order_number']
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+
+
+    # def mark_as_delivered(order_id):
+    # """Mark an order as delivered (admin function)"""
+    # try:
+    #     try:
+    #         order_id = ObjectId(order_id)
+    #     except InvalidId:
+    #         return jsonify({'error': 'Invalid order ID format'}), 400
+        
+    #     db = get_database()
+        
+    #     order = db.orders.find_one({'_id': order_id})
+    #     if not order:
+    #         return jsonify({'error': 'Order not found'}), 404
+        
+    #     # Check if order can be marked as delivered
+    #     if order['status'] == 'canceled':
+    #         return jsonify({'error': 'Cannot mark canceled order as delivered'}), 400
+        
+    #     if order['status'] == 'delivered':
+    #         return jsonify({'message': 'Order is already marked as delivered'}), 200
+        
+    #     result = db.orders.update_one(
+    #         {'_id': order_id},
+    #         {'$set': {'status': 'delivered'}}
+    #     )
+        
+    #     if result.modified_count == 0:
+    #         return jsonify({'error': 'Failed to update order status'}), 500
+        
+    #     return jsonify({
+    #         'message': 'Order marked as delivered successfully',
+    #         'order_id': str(order_id),
+    #         'order_number': order['order_number']
+    #     }), 200
+        
+    # except Exception as e:
+    #     return jsonify({'error': 'Internal server error'}), 500
