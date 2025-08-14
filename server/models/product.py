@@ -2,7 +2,7 @@ from datetime import datetime
 
 class Product:
     def __init__(self, name, description, price, roast_level, origin_country, elevation,
-                 inventory_count, image_url, farm_info,
+                 inventory_count, farm_info,
                  processing_method, tasting_notes):
         self.name = name
         self.description = description
@@ -11,7 +11,6 @@ class Product:
         self.origin_country = origin_country
         self.elevation = elevation # in meters
         self.inventory_count = int(inventory_count)
-        self.image_url = image_url
         self.farm_info = farm_info
         self.processing_method = processing_method  # 'washed', 'natural', 'honey', etc.
         self.tasting_notes = tasting_notes or []  # Array of flavor notes
@@ -29,7 +28,6 @@ class Product:
             'origin_country': self.origin_country,
             'elevation': self.elevation,
             'inventory_count': self.inventory_count,
-            'image_url': self.image_url,
             'farm_info': self.farm_info,
             'processing_method': self.processing_method,
             'tasting_notes': self.tasting_notes,

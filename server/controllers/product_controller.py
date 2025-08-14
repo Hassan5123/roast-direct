@@ -8,7 +8,7 @@ def add_product():
     try:
         data = request.get_json()
 
-        required_fields = ['name', 'description', 'price', 'roast_level', 'origin_country', 'elevation', 'inventory_count', 'image_url', 'farm_info', 'processing_method', 'tasting_notes']
+        required_fields = ['name', 'description', 'price', 'roast_level', 'origin_country', 'elevation', 'inventory_count', 'farm_info', 'processing_method', 'tasting_notes']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'{field} is required'}), 400
@@ -21,7 +21,6 @@ def add_product():
             origin_country=data['origin_country'],
             elevation=data['elevation'],
             inventory_count=data['inventory_count'],
-            image_url=data['image_url'],
             farm_info=data['farm_info'],
             processing_method=data['processing_method'],
             tasting_notes=data['tasting_notes'],

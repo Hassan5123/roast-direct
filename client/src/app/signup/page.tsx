@@ -7,10 +7,8 @@ import Link from 'next/link';
 export default function SignUpPage() {
   const router = useRouter();
   
-  // API base URL
   const API_BASE_URL = 'http://localhost:5001';
   
-  // Form state
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -18,7 +16,6 @@ export default function SignUpPage() {
     password: ''
   });
   
-  // Validation state
   const [errors, setErrors] = useState({
     first_name: '',
     last_name: '',
@@ -26,7 +23,6 @@ export default function SignUpPage() {
     password: ''
   });
   
-  // API error state
   const [apiError, setApiError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
@@ -60,19 +56,16 @@ export default function SignUpPage() {
       password: ''
     };
     
-    // Validate first name
     if (!formData.first_name.trim()) {
       newErrors.first_name = 'First name is required';
       isValid = false;
     }
     
-    // Validate last name
     if (!formData.last_name.trim()) {
       newErrors.last_name = 'Last name is required';
       isValid = false;
     }
     
-    // Validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
@@ -82,7 +75,6 @@ export default function SignUpPage() {
       isValid = false;
     }
     
-    // Validate password
     if (!formData.password) {
       newErrors.password = 'Password is required';
       isValid = false;
@@ -106,8 +98,6 @@ export default function SignUpPage() {
     setApiError('');
     
     try {
-      // For now, since the backend connection is failing with 404,
-      // we'll handle the errors more gracefully for the user
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
@@ -121,12 +111,11 @@ export default function SignUpPage() {
       try {
         data = await response.json();
       } catch (parseError) {
-        // If we can't parse JSON, provide a user-friendly message
+        // If JSON can't be parsed
         throw new Error('Unable to connect to the server. Please try again later.');
       }
       
       if (!response.ok) {
-        // More user-friendly error messages
         if (response.status === 409) {
           throw new Error('An account with this email already exists. Please use a different email or try logging in.');
         } else if (response.status === 400) {
@@ -138,7 +127,6 @@ export default function SignUpPage() {
         }
       }
       
-      // Store token in localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       

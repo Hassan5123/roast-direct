@@ -7,22 +7,18 @@ import Link from 'next/link';
 export default function LoginPage() {
   const router = useRouter();
   
-  // API base URL
   const API_BASE_URL = 'http://localhost:5001';
   
-  // Form state
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   
-  // Validation state
   const [errors, setErrors] = useState({
     email: '',
     password: ''
   });
   
-  // API error state
   const [apiError, setApiError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
@@ -54,13 +50,11 @@ export default function LoginPage() {
       password: ''
     };
     
-    // Validate email
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
       isValid = false;
     }
     
-    // Validate password
     if (!formData.password) {
       newErrors.password = 'Password is required';
       isValid = false;
@@ -81,8 +75,6 @@ export default function LoginPage() {
     setApiError('');
     
     try {
-      // For now, since the backend connection is failing with 404,
-      // we'll handle the errors more gracefully for the user
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
@@ -91,17 +83,14 @@ export default function LoginPage() {
         body: JSON.stringify(formData),
       });
       
-      // Try to parse response as JSON
       let data;
       try {
         data = await response.json();
       } catch (parseError) {
-        // If we can't parse JSON, provide a user-friendly message
         throw new Error('Unable to connect to the server. Please try again later.');
       }
       
       if (!response.ok) {
-        // More user-friendly error messages
         if (response.status === 401) {
           throw new Error('Invalid email or password. Please try again.');
         } else if (response.status === 404) {
@@ -111,11 +100,9 @@ export default function LoginPage() {
         }
       }
       
-      // Store token in localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       
-      // Redirect to products page after successful login
       router.push('/products');
     } catch (error) {
       if (error instanceof Error) {

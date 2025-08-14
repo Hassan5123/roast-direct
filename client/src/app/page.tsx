@@ -1,3 +1,5 @@
+// client/src/app/page.tsx (landing page)
+
 import Image from "next/image";
 import Link from "next/link";
 
@@ -27,7 +29,7 @@ export default function Home() {
           </div>
           <div className="md:w-1/2 h-64 md:h-96 w-full md:w-auto">
             <Image 
-              src="/landing-page.jpg" 
+              src="/web-images/landing-page.jpg" 
               alt="Freshly roasted coffee beans"
               width={780}
               height={438}
