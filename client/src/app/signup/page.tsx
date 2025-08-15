@@ -1,11 +1,20 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '../../utils/authContext';
 
 export default function SignUpPage() {
   const router = useRouter();
+  const { login, isAuthenticated } = useAuth();
+  
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/products');
+    }
+  }, [isAuthenticated, router]);
   
   const API_BASE_URL = 'http://localhost:5001';
   
@@ -127,11 +136,8 @@ export default function SignUpPage() {
         }
       }
       
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
-      // Redirect to products page after successful registration
-      router.push('/products');
+      // Use the auth context to log the user in after successful signup
+      await login(formData.email, formData.password);
     } catch (error) {
       if (error instanceof Error) {
         setApiError(error.message);

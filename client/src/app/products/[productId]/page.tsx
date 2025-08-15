@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { useCart } from '../../../utils/cartContext';
+import { useAuth } from '../../../utils/authContext';
 
 type Product = {
   _id: string;
@@ -31,8 +33,16 @@ export default function ProductDetailPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
-  const [grindOption, setGrindOption] = useState<string>('Whole Bean');
+  const [grindOption, setGrindOption] = useState<string>('');
   const [quantityError, setQuantityError] = useState<string>('');
+  const [grindOptionError, setGrindOptionError] = useState<string>('');
+  const [addingToCart, setAddingToCart] = useState<boolean>(false);
+  const [addToCartSuccess, setAddToCartSuccess] = useState<boolean>(false);
+  const [authError, setAuthError] = useState<string>('');
+  
+  const { addToCart, items } = useCart();
+  const { isAuthenticated } = useAuth();
+  const router = useRouter();
 
   const API_BASE_URL = 'http://localhost:5001';
 
@@ -73,21 +83,122 @@ export default function ProductDetailPage() {
     }).format(price);
   };
   
+  // Calculate current quantity in cart for this product
+  const currentCartQuantity = useMemo(() => {
+    if (!product) return 0;
+    
+    // Sum quantities of this product across all grind options
+    return items
+      .filter(item => item.productId === product._id)
+      .reduce((total, item) => total + item.quantity, 0);
+  }, [items, product]);
+  
+  // Calculate current quantity in cart for this product with current grind option
+  const currentCartQuantityForGrind = useMemo(() => {
+    if (!product || !grindOption) return 0;
+    
+    // Find quantity for this product with specific grind option
+    const item = items.find(item => 
+      item.productId === product._id && 
+      item.grindOption === grindOption
+    );
+    
+    return item ? item.quantity : 0;
+  }, [items, product, grindOption]);
+
+  // Calculate available inventory (total inventory minus what's already in cart)
+  const availableInventory = useMemo(() => {
+    if (!product) return 0;
+    return Math.max(0, product.inventory_count - currentCartQuantity);
+  }, [product, currentCartQuantity]);
+
   // Handle quantity change
   const handleQuantityChange = (newQuantity: number) => {
     if (newQuantity < 1) return;
     
-    if (product && newQuantity > product.inventory_count) {
-      setQuantityError(`Sorry, only ${product.inventory_count} available in stock`);
-    } else {
-      setQuantityError('');
-      setQuantity(newQuantity);
+    if (product) {
+      if (newQuantity > availableInventory) {
+        if (currentCartQuantity > 0) {
+          setQuantityError(`Sorry, only ${availableInventory} more available (${currentCartQuantity} already in cart)`);
+        } else {
+          setQuantityError(`Sorry, only ${product.inventory_count} available in stock`);
+        }
+      } else {
+        setQuantityError('');
+        setQuantity(newQuantity);
+      }
     }
   };
   
   // Handle grind option change
   const handleGrindOptionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setGrindOption(e.target.value);
+    if (e.target.value) {
+      setGrindOptionError('');
+    }
+  };
+  
+  // Handle add to cart functionality
+  const handleAddToCart = () => {
+    // Reset any previous errors
+    setAuthError('');
+    
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      setAuthError('You need to login to add items to cart');
+      return;
+    }
+    
+    // Validate required fields
+    if (!grindOption) {
+      setGrindOptionError('Please select a grind option');
+      return;
+    }
+    
+    if (quantityError) {
+      return;
+    }
+    
+    // Validate against available inventory one more time before adding
+    if (product && quantity > availableInventory) {
+      setQuantityError(`Cannot add ${quantity} items. Only ${availableInventory} more available.`);
+      return;
+    }
+    
+    if (product && quantity > 0) {
+      setAddingToCart(true);
+      
+      // Simulate a short delay as if processing
+      setTimeout(() => {
+        // Get existing item with same product and grind option
+        const existingItem = items.find(item => 
+          item.productId === product._id && 
+          item.grindOption === grindOption
+        );
+        
+        // Calculate final quantity by adding current selection to what's already in cart
+        const finalQuantity = existingItem ? existingItem.quantity + quantity : quantity;
+        
+        // Add the product to cart
+        addToCart({
+          productId: product._id,
+          name: product.name,
+          price: product.price,
+          quantity: finalQuantity,
+          grindOption: grindOption,
+          imageUrl: `/web-images/product-images/${product._id}.jpg`,
+        });
+        
+        // Show success message
+        setAddToCartSuccess(true);
+        setAddingToCart(false);
+        
+        // Hide success message after 3 seconds
+        setTimeout(() => {
+          setAddToCartSuccess(false);
+        }, 3000);
+      }, 500);
+    }
   };
 
   return (
@@ -228,7 +339,7 @@ export default function ProductDetailPage() {
               {/* Quantity Selector */}
               <div className="mt-2 border-t border-gray-200 pt-2">
                 <div className="flex justify-between items-center">
-                  <h2 className="text-sm font-bold text-gray-800">Quantity</h2>
+                  <h2 className="text-sm font-bold text-gray-800">Quantity {currentCartQuantity > 0 && <span className="font-normal text-amber-600 text-xs ml-1">(Already in cart: {currentCartQuantity})</span>}</h2>
                   <div className="flex items-center">
                     <button
                       onClick={() => handleQuantityChange(quantity - 1)}
@@ -249,7 +360,7 @@ export default function ProductDetailPage() {
                     />
                     <button
                       onClick={() => handleQuantityChange(quantity + 1)}
-                      disabled={product.inventory_count <= quantity}
+                      disabled={availableInventory <= quantity}
                       className="p-1 border border-gray-300 rounded-r-md hover:bg-gray-100 disabled:opacity-50 text-black"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -261,6 +372,12 @@ export default function ProductDetailPage() {
                 {quantityError && (
                   <p className="mt-1 text-sm text-red-600">{quantityError}</p>
                 )}
+                {!quantityError && availableInventory > 0 && (
+                  <p className="mt-1 text-xs text-gray-600">In stock: {product.inventory_count} {currentCartQuantity > 0 && `(${availableInventory} available to add)`}</p>
+                )}
+                {availableInventory === 0 && (
+                  <p className="mt-1 text-xs text-red-600">Maximum quantity already in cart</p>
+                )}
               </div>
               
               {/* Grind Options */}
@@ -269,8 +386,9 @@ export default function ProductDetailPage() {
                 <select
                   value={grindOption}
                   onChange={handleGrindOptionChange}
-                  className="block w-full rounded-md border border-gray-300 py-1 px-3 text-sm text-black focus:outline-none focus:ring-amber-500 focus:border-amber-500"
+                  className={`block w-full rounded-md border ${!grindOption && 'border-red-300'} border-gray-300 py-1 px-3 text-sm text-black focus:outline-none focus:ring-amber-500 focus:border-amber-500`}
                 >
+                  <option value="" disabled>Select a grind option</option>
                   {VALID_GRIND_OPTIONS.map((option) => (
                     <option key={option} value={option}>
                       {option}
@@ -281,15 +399,64 @@ export default function ProductDetailPage() {
               
               {/* Add to Cart Button */}
               <div className="mt-2">
+                {grindOptionError && (
+                  <p className="text-sm text-red-600 mb-1">{grindOptionError}</p>
+                )}
+                {authError && (
+                  <div className="mb-2 bg-red-100 border border-red-400 text-red-700 px-3 py-1 rounded flex items-center text-sm">
+                    <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    {authError}
+                    <button 
+                      className="ml-2 underline text-red-800 hover:text-red-900" 
+                      onClick={() => router.push('/login')}
+                    >
+                      Login now
+                    </button>
+                  </div>
+                )}
+                {addToCartSuccess && (
+                  <div className="mb-2 bg-green-100 border border-green-400 text-green-700 px-3 py-1 rounded flex items-center text-sm">
+                    <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Added to cart!
+                  </div>
+                )}
                 <button 
                   className="w-full bg-amber-700 text-white py-1.5 px-4 rounded-md hover:bg-amber-800 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:ring-offset-1 transition-colors duration-300 flex items-center justify-center text-sm"
-                  disabled={product.inventory_count === 0}
+                  disabled={availableInventory === 0 || addingToCart}
+                  onClick={handleAddToCart}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  {product.inventory_count > 0 ? 'Add to Cart' : 'Out of Stock'}
+                  {addingToCart ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      {availableInventory > 0 ? 'Add to Cart' : (product.inventory_count > 0 ? 'Maximum in Cart' : 'Out of Stock')}
+                    </>
+                  )}
                 </button>
+                <div className="flex justify-center mt-2">
+                  <button 
+                    onClick={() => router.push('/cart')} 
+                    className="text-amber-700 text-sm hover:underline flex items-center"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    View Cart
+                  </button>
+                </div>
               </div>
             </div>
           </div>

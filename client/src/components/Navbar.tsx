@@ -2,34 +2,15 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Logout from './Logout';
+import { useAuth } from '../utils/authContext';
+import { useCart } from '../utils/cartContext';
 
 const Navbar = () => {
-  // Start as logged out
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const { getItemCount } = useCart();
   const pathname = usePathname();
-
-  // Check if user is authenticated on mount and when route/storage changes
-  useEffect(() => {
-    const checkAuth = () => {
-      if (typeof window !== 'undefined') {
-        const userData = localStorage.getItem('user');
-        setIsAuthenticated(!!userData);
-      }
-    };
-
-    // Check auth on mount and pathname change
-    checkAuth();
-
-    // Listen for storage changes (like when another tab logs in/out)
-    window.addEventListener('storage', checkAuth);
-    
-    return () => {
-      window.removeEventListener('storage', checkAuth);
-    };
-  }, [pathname]); // Re-run effect when pathname changes
 
   return (
     <nav className="bg-white border-b border-gray-100 py-4 px-6 shadow-sm sticky top-0 z-10">
@@ -56,11 +37,16 @@ const Navbar = () => {
 
           {isAuthenticated ? (
             <>
-              {/* Cart Icon - Only visible when authenticated */}
-              <Link href="/cart" className="p-2 text-amber-700 hover:text-amber-800 transition-colors duration-200">
+              {/* Cart Icon with Item Count - Only visible when authenticated */}
+              <Link href="/cart" className="p-2 text-amber-700 hover:text-amber-800 transition-colors duration-200 relative">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
+                {getItemCount() > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {getItemCount()}
+                  </span>
+                )}
               </Link>
               {/* Logout Button - Only visible when authenticated */}
               <Logout />

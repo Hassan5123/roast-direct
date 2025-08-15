@@ -1,17 +1,12 @@
 "use client";
 
-import { useRouter } from 'next/navigation';
+import { useAuth } from '../utils/authContext';
 
 export default function Logout() {
-  const router = useRouter();
+  const { logout } = useAuth();
   
   const handleLogout = () => {
-    localStorage.removeItem('user');
-    
-    // Dispatch a storage event so other components (like Navbar) can detect the change
-    window.dispatchEvent(new Event('storage'));
-    
-    router.push('/login');
+    logout();
   };
 
   return (

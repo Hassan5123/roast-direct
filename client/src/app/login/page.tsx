@@ -1,11 +1,20 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '../../utils/authContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login, isAuthenticated } = useAuth();
+  
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/products');
+    }
+  }, [isAuthenticated, router]);
   
   const API_BASE_URL = 'http://localhost:5001';
   
@@ -75,35 +84,14 @@ export default function LoginPage() {
     setApiError('');
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      // Using backend authentication API
+      const loginSuccess = await login(formData.email, formData.password);
       
-      let data;
-      try {
-        data = await response.json();
-      } catch (parseError) {
-        throw new Error('Unable to connect to the server. Please try again later.');
+      if (!loginSuccess) {
+        throw new Error('Invalid email or password. Please try again.');
       }
       
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('Invalid email or password. Please try again.');
-        } else if (response.status === 404) {
-          throw new Error('The login service is currently unavailable. Please try again later.');
-        } else {
-          throw new Error(data.error || 'Unable to log in. Please try again later.');
-        }
-      }
-      
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
-      router.push('/products');
+      // If login successful, the auth context will handle the redirect
     } catch (error) {
       if (error instanceof Error) {
         setApiError(error.message);
