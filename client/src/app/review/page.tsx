@@ -93,7 +93,7 @@ export default function ReviewPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         },
         body: JSON.stringify({
           subtotal,
@@ -146,9 +146,71 @@ export default function ReviewPage() {
     }).format(price);
   };
 
-  const handlePlaceOrder = () => {
-    // This will be implemented later
-    alert('Order placement will be implemented in a future update');
+  const handlePlaceOrder = async () => {
+    try {
+      setIsProcessing(true);
+      setError('');
+      
+      // Get form data from localStorage
+      const checkoutFormData = localStorage.getItem('checkoutFormData');
+      if (!checkoutFormData || !orderDetails) {
+        setError('Missing order information. Please go back to checkout.');
+        return;
+      }
+      
+      const formData = JSON.parse(checkoutFormData);
+      
+      // Prepare shipping address
+      const shippingAddress = {
+        street: formData.shippingAddress,
+        city: formData.shippingCity,
+        state: formData.shippingState,
+        zip: formData.shippingZip
+      };
+      
+      // Prepare items for the API call
+      const orderItems = items.map(item => ({
+        product_id: item.productId,
+        quantity: item.quantity,
+        price_at_time: item.price,
+        grind_option: item.grindOption || 'Whole Bean'
+      }));
+      
+      // Make the API call to place the order
+      const response = await fetch(`${API_BASE_URL}/api/orders/place_order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({
+          items: orderItems,
+          shipping_address: shippingAddress,
+          final_total: orderDetails.final_total
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to place order');
+      }
+      
+      const data = await response.json();
+      
+      // Clear the cart and localStorage
+      clearCart();
+      localStorage.removeItem('checkoutFormData');
+      
+      // Redirect to order confirmation page with order details
+      const confirmationUrl = `/order-confirmation?orderNumber=${encodeURIComponent(data.order_number)}&orderId=${encodeURIComponent(data.order_id)}&finalTotal=${encodeURIComponent(data.final_total)}`;
+      router.push(confirmationUrl);
+      
+    } catch (error: any) {
+      console.error('Error placing order:', error);
+      setError(error.message || 'Failed to place order. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleBackToCheckout = () => {
