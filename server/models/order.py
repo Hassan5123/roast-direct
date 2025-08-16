@@ -4,13 +4,13 @@ import uuid
 import random
 
 class Order:
-    def __init__(self, user_id, items, shipping_address, billing_address, payment_info, final_total):
+    def __init__(self, user_id, items, shipping_address, billing_address=None, payment_info=None, final_total=0):
         self.user_id = ObjectId(user_id)
         self.order_number = self.generate_order_number()
         self.items = items  # Array of {product_id, quantity, grind_option, price_at_time}
         self.shipping_address = shipping_address
-        self.billing_address = billing_address
-        self.payment_info = payment_info  # Stripe payment intent ID or charge ID
+        self.billing_address = billing_address  # Excluded for MVP purposes
+        self.payment_info = payment_info  # Excluded for MVP purposes
         self.final_total = final_total
         self.status = 'in-progress'  # in-progress, delivered, canceled
         self.canceled_at = None

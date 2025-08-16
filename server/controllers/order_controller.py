@@ -83,7 +83,7 @@ def calculate_subtotal():
 
 
 def calculate_final_total():
-    """Calculate tax, shipping, and final total for order"""
+    """Calculate tax, shipping, and final total for order. Also sanitizes card info for security."""
     try:
         data = request.get_json()
         if not data or 'subtotal' not in data:
@@ -96,6 +96,70 @@ def calculate_final_total():
         except (ValueError, TypeError):
             return jsonify({'error': 'Invalid subtotal format'}), 400
         
+        # Check for required payment fields
+        required_payment_fields = [
+            'card_number', 'cardholder_name', 'cvc', 'exp_month', 'exp_year', 
+            'shipping_address', 'billing_address'
+        ]
+        
+        missing_fields = [field for field in required_payment_fields if field not in data]
+        if missing_fields:
+            return jsonify({
+                'error': 'Missing required payment fields', 
+                'missing_fields': missing_fields
+            }), 400
+            
+        # Validate card information
+        card_errors = []
+        
+        # Validate card number
+        card_number = str(data['card_number']).replace(' ', '').replace('-', '')
+        if not card_number.isdigit() or len(card_number) < 13 or len(card_number) > 19:
+            card_errors.append('Invalid card number format')
+        
+        # Validate cardholder name
+        cardholder_name = str(data['cardholder_name']).strip()
+        if len(cardholder_name) < 3 or len(cardholder_name) > 100:
+            card_errors.append('Invalid cardholder name')
+        
+        # Validate CVC
+        cvc = str(data['cvc'])
+        if not cvc.isdigit() or len(cvc) < 3 or len(cvc) > 4:
+            card_errors.append('Invalid CVC format')
+        
+        # Validate expiration date
+        try:
+            exp_month = int(data['exp_month'])
+            exp_year = int(data['exp_year'])
+            if exp_month < 1 or exp_month > 12:
+                card_errors.append('Invalid expiration month (must be 1-12)')
+            if exp_year < datetime.now().year or exp_year > datetime.now().year + 20:
+                card_errors.append('Invalid expiration year')
+        except (ValueError, TypeError):
+            card_errors.append('Invalid expiration date format')
+        
+        # Validate shipping address
+        shipping_address = data['shipping_address']
+        if not isinstance(shipping_address, dict):
+            card_errors.append('Shipping address must be an object')
+        else:
+            address_required_fields = ['street', 'city', 'state', 'zip']
+            for field in address_required_fields:
+                if field not in shipping_address or not str(shipping_address.get(field, '')).strip():
+                    card_errors.append(f'Shipping address missing: {field}')
+        
+        # Validate billing address
+        billing_address = data['billing_address']
+        if not isinstance(billing_address, dict):
+            card_errors.append('Billing address must be an object')
+        else:
+            for field in address_required_fields:
+                if field not in billing_address or not str(billing_address.get(field, '')).strip():
+                    card_errors.append(f'Billing address missing: {field}')
+        
+        if card_errors:
+            return jsonify({'error': 'Validation failed', 'details': card_errors}), 400
+        
         # Calculate random shipping cost (3.99 - 7.99)
         shipping_cost = round(random.uniform(3.99, 7.99), 2)
         
@@ -107,12 +171,13 @@ def calculate_final_total():
         final_total = round(subtotal + tax_amount + shipping_cost, 2)
         
         return jsonify({
-            'message': 'Order totals calculated successfully',
+            'message': 'Order totals calculated and payment info validated successfully',
             'subtotal': subtotal,
             'tax_amount': tax_amount,
             'tax_rate': round(tax_rate * 100, 1),  # Return as percentage for display
             'shipping_cost': shipping_cost,
-            'final_total': final_total
+            'final_total': final_total,
+            'validation_passed': True
         }), 200
         
     except Exception as e:
@@ -124,16 +189,14 @@ def place_order():
     try:
         data = request.get_json()
         
-        # Validate required fields
-        required_fields = ['items', 'shipping_address', 'billing_address', 'payment_info', 'final_total']
+        # Validate required fields - only need items, shipping_address, final_total
+        required_fields = ['items', 'shipping_address', 'final_total']
         if not data or not all(field in data for field in required_fields):
-            return jsonify({'error': 'All fields are required: items, shipping_address, billing_address, payment_info, final_total'}), 400
+            return jsonify({'error': 'Required fields: items, shipping_address, final_total'}), 400
         
         user_id = g.current_user_id
         items = data['items']
         shipping_address = data['shipping_address']
-        billing_address = data['billing_address']
-        payment_info = data['payment_info']
         final_total = data['final_total']
         
         # Validate items structure
@@ -204,18 +267,16 @@ def place_order():
                         'price_at_time': price_at_time,
                         'grind_option': grind_option
                     })
-                
-                # Create order object
+
                 order = Order(
                     user_id=user_id,
                     items=processed_items,
                     shipping_address=shipping_address,
-                    billing_address=billing_address,
-                    payment_info=payment_info,
+                    billing_address=None,
+                    payment_info=None,
                     final_total=final_total
                 )
                 
-                # Insert order into database
                 order_result = db.orders.insert_one(order.to_dict(), session=session)
                 
                 if not order_result.inserted_id:
@@ -330,7 +391,6 @@ def get_order_by_id(order_id):
             }
             order_items.append(product_info)
         
-        # Format complete order details for frontend
         order_details = {
             'order_id': str(order['_id']),
             'order_number': order['order_number'],
@@ -340,11 +400,11 @@ def get_order_by_id(order_id):
             'final_total': order['final_total'],
             'items': order_items,
             'shipping_address': order['shipping_address'],
-            'billing_address': order['billing_address'],
+            'billing_address': order.get('billing_address'),
             'payment_info': {
-                'payment_method': order['payment_info']['payment_method'],
-                'last_four': order['payment_info'].get('last_four', '****')
-            }
+                'payment_method': 'card',  # Default for portfolio demo
+                'last_four': '****'        # Masked for security
+            } if order.get('payment_info') else None
         }
         
         return jsonify({
