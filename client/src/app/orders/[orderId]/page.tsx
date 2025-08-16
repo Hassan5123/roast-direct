@@ -43,6 +43,9 @@ export default function OrderDetailsPage() {
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const router = useRouter();
   const params = useParams();
   const orderId = params?.orderId as string;
@@ -149,8 +152,83 @@ export default function OrderDetailsPage() {
     );
   }
 
+  const handleCancelOrder = async () => {
+    if (!orderId) return;
+    
+    setCancelLoading(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      const response = await fetch(`http://localhost:5001/api/orders/cancel/${orderId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('authToken');
+          router.push('/login');
+          return;
+        }
+        
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to cancel order');
+      }
+
+      const data = await response.json();
+      
+      // Update the order status locally
+      if (order) {
+        setOrder({
+          ...order,
+          status: 'canceled'
+        });
+      }
+      
+      setSuccessMessage('Order has been successfully canceled.');
+    } catch (error: any) {
+      console.error('Error canceling order:', error);
+      setError(error.message || 'Failed to cancel order');
+    } finally {
+      setCancelLoading(false);
+      setShowCancelModal(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Confirmation Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Cancel Order</h3>
+            <p className="text-gray-700 mb-6">Are you sure you want to cancel this order? This action cannot be undone and inventory will be restored.</p>
+            <div className="flex space-x-3 justify-end">
+              <button
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+                onClick={() => setShowCancelModal(false)}
+                disabled={cancelLoading}
+              >
+                No, Keep Order
+              </button>
+              <button
+                className={`px-4 py-2 ${cancelLoading ? 'bg-gray-400' : 'bg-red-600 hover:bg-red-700'} text-white rounded-md transition-colors`}
+                onClick={handleCancelOrder}
+                disabled={cancelLoading}
+              >
+                {cancelLoading ? 'Canceling...' : 'Yes, Cancel Order'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -276,18 +354,22 @@ export default function OrderDetailsPage() {
             )}
 
             {/* Order Actions */}
-            {order.status === 'in-progress' && (
+            {(order.status === 'in-progress' || order.status === 'processing') && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Actions</h3>
-                <button
-                  className="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors text-sm font-medium"
-                  onClick={() => {
-                    // TODO: Implement cancel order functionality
-                    alert('Cancel order functionality coming soon');
-                  }}
-                >
-                  Cancel Order
-                </button>
+                {successMessage ? (
+                  <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded relative mb-4">
+                    <span className="block sm:inline">{successMessage}</span>
+                  </div>
+                ) : (
+                  <button
+                    className={`w-full ${cancelLoading ? 'bg-gray-400' : 'bg-red-600 hover:bg-red-700'} text-white px-4 py-2 rounded-md transition-colors text-sm font-medium`}
+                    onClick={() => setShowCancelModal(true)}
+                    disabled={cancelLoading}
+                  >
+                    {cancelLoading ? 'Canceling...' : 'Cancel Order'}
+                  </button>
+                )}
               </div>
             )}
           </div>
