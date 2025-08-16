@@ -76,13 +76,15 @@ export default function CheckoutPage() {
           items: items.map(item => ({
             product_id: item.productId,
             quantity: item.quantity,
-            price: item.price
+            price: item.price,
+            grind_option: item.grindOption || 'Whole Bean'
           }))
         })
       });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch subtotal');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch subtotal');
       }
       
       const data = await response.json();
