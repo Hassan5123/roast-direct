@@ -3,11 +3,18 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
 interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   checkingAuth: boolean;
+  user: User | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,6 +30,7 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [checkingAuth, setCheckingAuth] = useState<boolean>(true);
+  const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   
@@ -32,9 +40,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const authStatus = localStorage.getItem('roastDirectAuth');
         setIsAuthenticated(authStatus === 'true');
+        
+        // Load user data from localStorage
+        const userData = localStorage.getItem('userData');
+        if (userData) {
+          setUser(JSON.parse(userData));
+        } else {
+          setUser(null);
+        }
       } catch (error) {
         console.error('Failed to check auth status:', error);
         setIsAuthenticated(false);
+        setUser(null);
       } finally {
         setCheckingAuth(false);
       }
@@ -88,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('userData', JSON.stringify(data.user));
       
       setIsAuthenticated(true);
+      setUser(data.user);
       return true;
     } catch (error) {
       console.error('Login error:', error);
@@ -101,11 +119,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userData');
     setIsAuthenticated(false);
+    setUser(null);
     router.push('/login');
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout, checkingAuth }}>
+    <AuthContext.Provider value={{ isAuthenticated, login, logout, checkingAuth, user }}>
       {children}
     </AuthContext.Provider>
   );

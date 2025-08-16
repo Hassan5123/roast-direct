@@ -123,13 +123,10 @@ export default function CartPage() {
     }).format(price);
   };
 
-  // Checkout function (placeholder for future implementation)
+  // Redirect to checkout page
   const handleCheckout = () => {
     setProcessing(true);
-    setTimeout(() => {
-      alert('Thank you for your order! This is just a demo, no actual order was placed.');
-      setProcessing(false);
-    }, 1500);
+    router.push('/checkout');
   };
 
   if (!isClient || checkingAuth) {
