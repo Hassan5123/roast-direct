@@ -143,7 +143,7 @@ export default function CheckoutPage() {
     setFormErrors({});
     setError('');
     
-    // Basic form validation - check for empty fields
+    // form validation - check for empty fields
     const errors: Record<string, string> = {};
     
     // Validate card details
@@ -173,6 +173,9 @@ export default function CheckoutPage() {
       setFormErrors(errors);
       return;
     }
+    
+    // Store form data in localStorage for the review page
+    localStorage.setItem('checkoutFormData', JSON.stringify(formData));
     
     // All fields are valid, proceed to review order
     router.push('/review');
