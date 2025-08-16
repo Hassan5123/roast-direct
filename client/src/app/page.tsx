@@ -16,7 +16,7 @@ export default function Home() {
             </h1>
             <p className="text-lg max-w-2xl">
               While most online coffee shops leave out key details, we provide everything: 
-              roast dates, farm information, processing methods, and tasting notes.
+              farm information, processing methods, tasting notes, and more. All our coffee is sold as 1 pound per bag.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link 
