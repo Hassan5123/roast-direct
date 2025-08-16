@@ -37,6 +37,10 @@ const Navbar = () => {
 
           {isAuthenticated ? (
             <>
+              {/* View Orders - Only visible when authenticated */}
+              <Link href="/orders" className="px-4 py-2 text-gray-700 hover:text-amber-700 transition-colors duration-200">
+                View Orders
+              </Link>
               {/* Cart Icon with Item Count - Only visible when authenticated */}
               <Link href="/cart" className="p-2 text-amber-700 hover:text-amber-800 transition-colors duration-200 relative">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

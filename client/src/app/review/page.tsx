@@ -12,6 +12,7 @@ export default function ReviewPage() {
   const [isClient, setIsClient] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [orderDetails, setOrderDetails] = useState<{
     subtotal: number;
     tax_amount: number;
@@ -201,9 +202,14 @@ export default function ReviewPage() {
       clearCart();
       localStorage.removeItem('checkoutFormData');
       
-      // Redirect to order confirmation page with order details
-      const confirmationUrl = `/order-confirmation?orderNumber=${encodeURIComponent(data.order_number)}&orderId=${encodeURIComponent(data.order_id)}&finalTotal=${encodeURIComponent(data.final_total)}`;
-      router.push(confirmationUrl);
+      // Display success message first, then redirect
+      setError('');
+      setSuccessMessage('Order placed successfully! Redirecting to orders page...');
+      
+      // Use timeout for redirect after state update
+      setTimeout(() => {
+        router.push('/orders');
+      }, 1000);
       
     } catch (error: any) {
       console.error('Error placing order:', error);
@@ -216,6 +222,25 @@ export default function ReviewPage() {
   const handleBackToCheckout = () => {
     router.push('/checkout');
   };
+
+  if (successMessage) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
+          <div className="text-green-500 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Order Placed!</h2>
+          <p className="text-gray-600 mb-6">{successMessage}</p>
+          <div className="animate-pulse flex justify-center">
+            <div className="h-2 w-16 bg-amber-600 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!isClient || checkingAuth || isProcessing) {
     return (
