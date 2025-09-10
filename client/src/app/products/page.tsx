@@ -20,7 +20,7 @@ export default function ProductsPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
-  const API_BASE_URL = 'http://localhost:5001';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
   // Fetch products on component mount
   useEffect(() => {

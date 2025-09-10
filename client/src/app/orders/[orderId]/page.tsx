@@ -64,7 +64,7 @@ export default function OrderDetailsPage() {
           return;
         }
 
-        const response = await fetch(`http://localhost:5001/api/orders/${orderId}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -163,7 +163,7 @@ export default function OrderDetailsPage() {
         return;
       }
 
-      const response = await fetch(`http://localhost:5001/api/orders/cancel/${orderId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/cancel/${orderId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

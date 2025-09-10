@@ -44,7 +44,7 @@ export default function ProductDetailPage() {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
 
-  const API_BASE_URL = 'http://localhost:5001';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
   // Fetch single product data
   useEffect(() => {

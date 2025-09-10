@@ -16,7 +16,7 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, router]);
   
-  const API_BASE_URL = 'http://localhost:5001';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
   
   const [formData, setFormData] = useState({
     email: '',

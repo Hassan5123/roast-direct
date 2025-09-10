@@ -43,7 +43,7 @@ export default function OrdersPage() {
           return;
         }
 
-        const response = await fetch('http://localhost:5001/api/orders/all_orders', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/all_orders`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,

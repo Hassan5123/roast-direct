@@ -23,7 +23,7 @@ export default function CartPage() {
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [productError, setProductError] = useState('');
 
-  const API_BASE_URL = 'http://localhost:5001';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
     setIsClient(true);
