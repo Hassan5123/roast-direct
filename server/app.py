@@ -25,6 +25,6 @@ def health_check():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5002))
     print(f"\n🚀 Server is running on port {port}")
-    app.run(debug=True, port=port)
+    app.run(debug=False, host='0.0.0.0', port=port)  # Note: debug=False and host='0.0.0.0'
 
 # source venv/bin/activate
