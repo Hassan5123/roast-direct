@@ -1,20 +1,10 @@
 /**
  * Helper function to handle product image loading with fallbacks
- * This handles both local development and production environments
+ * Works in both local development and production environments
  */
 export const getProductImageUrl = (productId: string): string => {
-  // Check if running on the client side
-  const isClient = typeof window !== 'undefined';
-  
-  // Get the base URL from the environment variable or construct from window. location in production
-  let baseUrl = '';
-  if (isClient && !process.env.NEXT_PUBLIC_IMAGE_BASE_URL) {
-    // If no explicit base URL is provided, use the current origin in production
-    baseUrl = window.location.origin;
-  } else {
-    baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || '';
-  }
-  
+  // Use window.location.origin if on client side, empty string for SSR
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
   return `${baseUrl}/web-images/product-images/${productId}.jpg`;
 };
 
@@ -27,15 +17,8 @@ export const handleImageError = (
 ): void => {
   const extensions = ['.webp', '.jpeg', '.png'];
   const imgElement = e.currentTarget;
-  // Get the base URL with the same logic as getProductImageUrl
-  const isClient = typeof window !== 'undefined';
-  let baseUrl = '';
-  
-  if (isClient && !process.env.NEXT_PUBLIC_IMAGE_BASE_URL) {
-    baseUrl = window.location.origin;
-  } else {
-    baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || '';
-  }
+  // Use window.location.origin if on client side, empty string for SSR
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
   
   // Check if already in the fallback process
   const attemptCount = imgElement.getAttribute('data-attempt') || '0';

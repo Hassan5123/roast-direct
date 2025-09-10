@@ -191,7 +191,9 @@ export default function CartPage() {
                   className="h-full w-full object-cover"
                   onError={(e) => {
                     e.currentTarget.onerror = null;
-                    e.currentTarget.src = `${process.env.NEXT_PUBLIC_IMAGE_BASE_URL || ''}/web-images/file.svg`; // fallback image
+                    const isClient = typeof window !== 'undefined';
+                    const baseUrl = isClient ? window.location.origin : '';
+                    e.currentTarget.src = `${baseUrl}/web-images/file.svg`; // fallback image
                   }}
                 />
               </div>
