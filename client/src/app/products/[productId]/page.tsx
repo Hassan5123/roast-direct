@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { getProductImageUrl, handleImageError } from '../../../utils/imageLoader';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCart } from '../../../utils/cartContext';
@@ -186,7 +187,7 @@ export default function ProductDetailPage() {
           price: product.price,
           quantity: finalQuantity,
           grindOption: grindOption,
-          imageUrl: `/web-images/product-images/${product._id}.jpg`,
+          imageUrl: getProductImageUrl(product._id),
         });
         
         // Show success message
@@ -240,32 +241,10 @@ export default function ProductDetailPage() {
             {/* Product Image */}
             <div className="md:w-1/3 h-48 relative bg-amber-100">
               <img
-                src={`/web-images/product-images/${product._id}.jpg`}
+                src={getProductImageUrl(product._id)}
                 alt={product.name}
                 className="h-full w-full object-cover"
-                onError={(e) => {
-                  // Try different extensions if jpg fails
-                  const extensions = ['.webp', '.jpeg', '.png'];
-                  const imgElement = e.currentTarget;
-                  const baseId = product._id;
-                  
-                  const currentSrc = imgElement.src;
-                  const attemptCount = imgElement.getAttribute('data-attempt') || '0';
-                  const currentAttempt = parseInt(attemptCount, 10);
-                  
-                  if (currentAttempt < extensions.length) {
-                    imgElement.setAttribute('data-attempt', (currentAttempt + 1).toString());
-                    imgElement.src = `/web-images/product-images/${baseId}${extensions[currentAttempt]}`;
-                  } else {
-                    imgElement.onerror = null; // prevent further error handling
-                    imgElement.style.display = 'none';
-                    imgElement.parentElement?.classList.add('flex', 'items-center', 'justify-center');
-                    const fallback = document.createElement('span');
-                    fallback.className = 'text-amber-700';
-                    fallback.textContent = 'No image available';
-                    imgElement.parentElement?.appendChild(fallback);
-                  }
-                }}
+                onError={(e) => handleImageError(e, product._id)}
               />
             </div>
             

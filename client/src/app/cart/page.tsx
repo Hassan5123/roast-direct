@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '../../utils/cartContext';
 import { useAuth } from '../../utils/authContext';
+import { getProductImageUrl } from '../../utils/imageLoader';
 import Link from 'next/link';
 
 type Product = {
@@ -185,12 +186,12 @@ export default function CartPage() {
               {/* Item Image */}
               <div className="md:w-1/6 h-24 bg-amber-100 rounded-md overflow-hidden">
                 <img 
-                  src={item.imageUrl} 
+                  src={getProductImageUrl(item.productId)}
                   alt={item.name}
                   className="h-full w-full object-cover"
                   onError={(e) => {
                     e.currentTarget.onerror = null;
-                    e.currentTarget.src = '/web-images/file.svg'; // fallback image
+                    e.currentTarget.src = `${process.env.NEXT_PUBLIC_IMAGE_BASE_URL || ''}/web-images/file.svg`; // fallback image
                   }}
                 />
               </div>

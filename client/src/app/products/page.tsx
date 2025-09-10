@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { getProductImageUrl, handleImageError } from '../../utils/imageLoader';
 
 // Define Product type based on backend model
 type Product = {
@@ -99,35 +100,10 @@ export default function ProductsPage() {
               <div className="relative h-52 w-full overflow-hidden bg-amber-100">
                 {/* Use local image paths from public/web-images directory */}
                 <img
-                  src={`/web-images/product-images/${product._id}.jpg`}
+                  src={getProductImageUrl(product._id)}
                   alt={product.name}
                   className="h-full w-full object-cover"
-                  onError={(e) => {
-                    // Try different extensions if jpg fails
-                    const extensions = ['.webp', '.jpeg', '.png'];
-                    const imgElement = e.currentTarget;
-                    const baseId = product._id;
-                    
-                    // Check if already in the fallback process
-                    const currentSrc = imgElement.src;
-                    const attemptCount = imgElement.getAttribute('data-attempt') || '0';
-                    const currentAttempt = parseInt(attemptCount, 10);
-                    
-                    if (currentAttempt < extensions.length) {
-                      // Try next extension
-                      imgElement.setAttribute('data-attempt', (currentAttempt + 1).toString());
-                      imgElement.src = `/web-images/product-images/${baseId}${extensions[currentAttempt]}`;
-                    } else {
-                      // All extensions failed, show text fallback
-                      imgElement.onerror = null; // prevent further error handling
-                      imgElement.style.display = 'none';
-                      imgElement.parentElement?.classList.add('flex', 'items-center', 'justify-center');
-                      const fallback = document.createElement('span');
-                      fallback.className = 'text-amber-700';
-                      fallback.textContent = 'No image available';
-                      imgElement.parentElement?.appendChild(fallback);
-                    }
-                  }}
+                  onError={(e) => handleImageError(e, product._id)}
                 />
               </div>
               
