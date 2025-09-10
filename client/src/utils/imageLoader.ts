@@ -1,9 +1,19 @@
 /**
  * Helper function to handle product image loading with fallbacks
+ * This handles both local development and production environments
  */
 export const getProductImageUrl = (productId: string): string => {
-  // This ensures we use the public URL in production and local path in development
-  const baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || '';
+  // Check if running on the client side
+  const isClient = typeof window !== 'undefined';
+  
+  // Get the base URL from the environment variable or construct from window. location in production
+  let baseUrl = '';
+  if (isClient && !process.env.NEXT_PUBLIC_IMAGE_BASE_URL) {
+    // If no explicit base URL is provided, use the current origin in production
+    baseUrl = window.location.origin;
+  } else {
+    baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || '';
+  }
   
   return `${baseUrl}/web-images/product-images/${productId}.jpg`;
 };
@@ -17,7 +27,15 @@ export const handleImageError = (
 ): void => {
   const extensions = ['.webp', '.jpeg', '.png'];
   const imgElement = e.currentTarget;
-  const baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || '';
+  // Get the base URL with the same logic as getProductImageUrl
+  const isClient = typeof window !== 'undefined';
+  let baseUrl = '';
+  
+  if (isClient && !process.env.NEXT_PUBLIC_IMAGE_BASE_URL) {
+    baseUrl = window.location.origin;
+  } else {
+    baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || '';
+  }
   
   // Check if already in the fallback process
   const attemptCount = imgElement.getAttribute('data-attempt') || '0';
