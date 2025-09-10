@@ -62,9 +62,9 @@ export default function OrdersPage() {
 
         const data = await response.json();
         setOrders(data.orders || []);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Error fetching orders:', error);
-        setError(error.message || 'Failed to load orders');
+        setError(error instanceof Error ? error.message : 'Failed to load orders');
       } finally {
         setLoading(false);
       }
@@ -141,7 +141,7 @@ export default function OrdersPage() {
               </svg>
             </div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">No orders yet</h2>
-            <p className="text-gray-600 mb-6">When you place orders, they'll appear here.</p>
+            <p className="text-gray-600 mb-6">When you place orders, they&apos;ll appear here.</p>
             <Link
               href="/products"
               className="bg-amber-600 text-white px-6 py-3 rounded-md hover:bg-amber-700 transition-colors"

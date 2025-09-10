@@ -112,7 +112,7 @@ export default function ReviewPage() {
         const errorData = await response.json();
         const error = new Error(errorData.error || 'Failed to calculate order totals');
         if (errorData.details) {
-          (error as any).details = errorData.details;
+          (error as Error & { details?: unknown }).details = errorData.details;
         }
         throw error;
       }
@@ -125,12 +125,12 @@ export default function ReviewPage() {
       let errorMessage = 'Failed to calculate order totals. Please try again.';
       
       if (error.message) {
-        errorMessage = error.message;
+        errorMessage = ((error as Error & { details?: { message?: string } }).details?.message) || errorMessage;
       }
       
       // Handle validation error details if available
-      if (error.details) {
-        errorMessage = `${errorMessage} (${error.details.join(', ')})`;
+      if (error instanceof Error && (error as Error & { details?: unknown }).details) {
+        errorMessage = `${errorMessage} (${(error as Error & { details?: string[] }).details.join(', ')})`;
       }
       
       setError(errorMessage);

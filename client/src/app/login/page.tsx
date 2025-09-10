@@ -174,7 +174,7 @@ export default function LoginPage() {
           {/* Footer */}
           <div className="px-8 py-4 bg-gray-50 border-t border-gray-200">
             <p className="text-sm text-center text-gray-600">
-              Don't have an account? <Link href="/signup" className="text-amber-700 hover:text-amber-800 font-semibold">Sign up</Link>
+              Don&apos;t have an account? <Link href="/signup" className="text-amber-700 hover:text-amber-800 font-semibold">Sign up</Link>
             </p>
           </div>
         </div>

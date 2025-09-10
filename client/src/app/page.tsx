@@ -83,7 +83,7 @@ export default function Home() {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-6">Discover Coffee With Complete Clarity</h2>
           <p className="text-lg mb-8 text-amber-100">
-            Know exactly what you're brewing with detailed information that most coffee shops leave out.
+            Know exactly what you&apos;re brewing with detailed information that most coffee shops leave out.
           </p>
           <Link 
             href="/products" 
