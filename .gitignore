@@ -1,0 +1,77 @@
+# RoastDirect .gitignore
+# Consolidated file for both client and server directories
+
+# --- Client-specific ignores --------------------------------------------
+
+# dependencies
+node_modules/
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# vercel
+.vercel
+
+# --- Server-specific ignores --------------------------------------------
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Python virtual environments
+venv/
+.venv/
+
+# Testing and IDE
+.coverage
+.pytest_cache/
+htmlcov/
+
+# --- Common ignores ----------------------------------------------------
+
+# Env files
+.env*
+
+# Logs and debugging
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# OS specific
+.DS_Store
+*.pem
+
+# Editor directories and files
+.vscode/
+.idea/
+
+# Project specific
+product_records.py

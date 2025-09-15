@@ -1,7 +1,5 @@
 # RoastDirect
 
-![RoastDirect Logo](client/public/web-images/landing-page.jpg)
-
 You can view and interact with the project at:
 https://roast-direct-production-2a5f.up.railway.app
 
