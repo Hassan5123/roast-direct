@@ -2,6 +2,10 @@
 
 ![RoastDirect Logo](client/public/web-images/landing-page.jpg)
 
+You can view and interact with the project at:
+https://roast-direct-production-2a5f.up.railway.app
+
+
 ## 🚀 Overview
 
 RoastDirect is a full-stack e-commerce platform designed to bring transparency and quality to online coffee shopping. Unlike typical online coffee shops that provide minimal information, RoastDirect offers comprehensive details about each coffee product, including roast dates, farm information, processing methods, and detailed tasting notes.
