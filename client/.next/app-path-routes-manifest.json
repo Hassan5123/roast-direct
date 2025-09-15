@@ -1,0 +1,14 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/favicon.ico/route": "/favicon.ico",
+  "/orders/[orderId]/page": "/orders/[orderId]",
+  "/products/page": "/products",
+  "/orders/page": "/orders",
+  "/page": "/",
+  "/review/page": "/review",
+  "/signup/page": "/signup",
+  "/login/page": "/login",
+  "/products/[productId]/page": "/products/[productId]",
+  "/checkout/page": "/checkout",
+  "/cart/page": "/cart"
+}

@@ -5,7 +5,7 @@
 
 # dependencies
 node_modules/
-/.pnp
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -17,11 +17,16 @@ node_modules/
 /coverage
 
 # next.js
-/.next/
+# DO NOT ignore .next directories - needed for production deployment
+!.next/**
+!client/.next/**
 /out/
 
 # production
-/build
+build/
+# But keep Next.js build files
+!client/.next/build/
+!.next/build/
 
 # typescript
 *.tsbuildinfo
